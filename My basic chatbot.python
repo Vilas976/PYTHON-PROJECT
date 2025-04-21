@@ -1,0 +1,75 @@
+import random
+import pandas as pd
+import os
+from datetime import datetime
+
+# Define a dictionary of possible bot responses
+collage_administrator_responses = {
+    "hi": ["Hello!"],
+    "how are you": ["I'm good, thanks!", "I'm fine, how about you?", "All is well!"],
+    "what is the name of your college": ["Our college is Devgiri Institute of Technologies and Management Studies!"],
+    "where is your college": ["We are located in Chhatrapati Sambhajinagar, Maharashtra!"],
+    "what courses do you offer": ["We offer a range of courses including Arts, Science, Commerce, and Engineering. This includes BA, BSc, BCom, BE, and more!"],
+    "what are the college timings": ["College timings are from 9:00 AM to 4:00 PM, Monday to Saturday!"],
+    "what is the fee structure": ["Please visit our website or contact our accounts office for detailed information on the fee structure!"],
+    "what are the extracurricular activities available": ["We offer various extracurricular activities, including sports, cultural events, and literary clubs!"],
+    "what is the placement scenario": ["We have a strong placement record, with many top companies recruiting our students!"],
+    "can I change my course after admission": ["For details on changing your course after admission, please contact our academic office!"],
+    "can I get a transfer certificate": ["Yes, you can obtain a transfer certificate. Please reach out to our administrative office for more details!"],
+    "your college is good": ["The quality of a college depends on various factors such as programs, facilities, faculty, and campus environment!"],
+    "default": ["I'm sorry, I didn't understand that. Could you please rephrase?", "I'm still learning. Can you ask something else?"]
+}
+
+# File path for saving data
+data_file = 'student_details.xlsx'
+
+# Function to save details to an Excel file
+def save_to_excel(data):
+    # Check if file exists
+    if os.path.exists(data_file):
+        df_existing = pd.read_excel(data_file)
+        df_new = pd.DataFrame([data])
+        df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+    else:
+        df_combined = pd.DataFrame([data])
+
+    df_combined.to_excel(data_file, index=False)
+
+# Function to collect user details
+def collect_user_details():
+    print("Please provide your details.")
+    name = input("Name: ")
+    email = input("Email: ")
+    phone = input("Phone: ")
+    data = {
+        "Name": name,
+        "Email": email,
+        "Phone": phone,
+        "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    save_to_excel(data)
+
+# Function to generate response and handle detail collection
+def generate_response(student_input, context):
+    student_input = student_input.lower().strip()
+    
+    if "details" in student_input:
+        collect_user_details()
+        return "Thank you for providing your details. They have been recorded."
+    
+    # Check if the input matches any predefined responses
+    for key in collage_administrator_responses:
+        if key in student_input:
+            return random.choice(collage_administrator_responses[key])
+    
+    return random.choice(collage_administrator_responses["default"])
+
+# Main conversation loop with context
+context = {}
+while True:
+    student_input = input("student: ")
+    if student_input.lower() in ['exit', 'quit', 'bye']:
+        print("college administrator: Goodbye! Have a great day!")
+        break
+    response = generate_response(student_input, context)
+    print(f"college administrator: {response}")
