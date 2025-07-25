@@ -1,0 +1,198 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import hashlib
+
+accounts = {}
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def register_user():
+    print("\nRegister New User")
+    name = input("Full Name: ")
+    roll_no = input("Roll Number: ")
+    email = input("Email: ")
+    password = input("Password: ")
+    
+    if roll_no in accounts:
+        print("❌ Roll number already registered.")
+        return False
+
+    accounts[roll_no] = {
+        "name": name,
+        "email": email,
+        "password": hash_password(password),
+    }
+    print("✅ Registration successful.")
+    return True
+
+def login_user():
+    print("\n🔐 Login Page")
+    roll_no = input("Roll Number: ")
+    password = input("Password: ")
+
+    if roll_no in accounts and accounts[roll_no]["password"] == hash_password(password):
+        print(f"✅ Welcome, {accounts[roll_no]['name']}!")
+        return accounts[roll_no]["name"]
+    else:
+        print("❌ Invalid credentials.")
+        return None
+
+data = [
+    {"Name":"Omkar Shelke","Cyber Security":50,"Networking":48,"Python":45,"GitHub":"https://github.com/om-devloper02/MY-PROFILE.git"},
+    {"Name":"Vilas Bamanavat","Cyber Security":50,"Python":55,"Networking":50,"Html":45,"GitHub":"https://github.com/Vilas976"},
+    {"Name":"Yash Gaikwad","Cyber Security":50,"Python":45,"Networking":40},
+    {"Name":"Abhi","Cyber Security":40,"Python":50,"Networking":38},
+    {"Name":"Shree Deshemuke","Python":60,"Cyber Security":55,"Networking":50,"Html":46},
+    {"Name":"jay","Python":50},
+    {"Name":"Krishna Bhabde","Python":52,"Cyber Security":45},
+    {"Name":"Akshata Dipwal","Python":50,"Cyber Security":48},
+    {"Name":"Rasika Shastri","Python":45,"Networking":45,"Cyber Security":45},
+    {"Name":"Shreya Rai","Python":35,"Cyber Security":46},
+]
+
+df = pd.DataFrame(data)
+
+def calculate_fields():
+    df["Total"] = df[["Cyber Security", "Python", "Networking", "Html"]].sum(axis=1, min_count=1)
+    df["Average"] = df["Total"] / 10
+    df["Grade"] = df["Average"].apply(lambda avg: "A" if avg >= 50 else "B" if avg >= 40 else "C")
+
+def show_report():
+    name = input("Enter your name to view your report: ")
+    student_data = df[df["Name"].str.lower() == name.lower()]
+    registered_user = None
+
+    for roll, info in accounts.items():
+        if info["name"].lower() == name.lower():
+            registered_user = info
+            break
+
+    if not student_data.empty:
+        print("\nYour Report:\n", student_data.fillna("-")[["Name", "Cyber Security", "Python", "Networking", "Html", "Total", "Average", "Grade", "GitHub"]])
+        if registered_user:
+            print("Your Courses:", registered_user.get("courses", "N/A"))
+    else:
+        print("❌ Student not found.")
+
+def add_student():
+    name = input("Enter name: ")
+    cyber = int(input("Cyber Security marks: "))
+    python = int(input("Python marks: "))
+    net = int(input("Networking marks: "))
+    html = int(input("Html Marks: "))
+    df.loc[len(df)] = {
+        "Name": name,
+        "Cyber Security": cyber,
+        "Python": python,
+        "Networking": net,
+        "Html": html
+    }
+    calculate_fields()
+
+def update_name():
+    old_name = input("Enter current name: ")
+    new_name = input("Enter new name: ")
+    df.loc[df["Name"] == old_name, "Name"] = new_name
+
+def delete_student():
+    global df
+    name = input("Enter name to delete: ")
+    df = df[df["Name"] != name]
+
+def update_marks():
+    name = input("Enter name to update marks: ")
+    if name in df["Name"].values:
+        subject = input("Which subject? (Cyber Security / Python / Networking / Html): ")
+        new_mark = int(input("Enter new mark: "))
+        df.loc[df["Name"] == name, subject] = new_mark
+        calculate_fields()
+    else:
+        print("❌ Name not found.")
+
+def show_full_report():
+    print("\nFull Report:\n", df.fillna("-")[["Name", "Cyber Security", "Python", "Networking", "Html", "Total", "Average", "Grade"]])
+
+def save_file():
+    df.to_excel("isa_final_report.xlsx", index=False)
+    print("✅ Saved as 'isa_final_report.xlsx'")
+
+def show_graph():
+    if df.empty:
+        print("❌ No data to plot.")
+        return
+    plt.figure(figsize=(12, 6))
+    x = df["Name"]
+    total = df["Total"]
+    avg = df["Average"]
+    plt.bar(x, total, color='skyblue', label="Total")
+    plt.plot(x, avg, color='orange', marker='o', label="Average")
+    plt.title("Student Performance Analyzer")
+    plt.xlabel("Student Name")
+    plt.ylabel("Marks")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.xticks(rotation=45)
+    plt.show()
+
+def show_top_performers():
+    print("\nTop Performers:")
+    top_df = df.sort_values(by="Total", ascending=False)
+    print(top_df[["Name", "Total", "Average", "Grade"]].head(5))
+
+calculate_fields()
+
+print("Welcome to Student Performance Analyzer")
+
+while True:
+    print("\n1. Register\n2. Login")
+    choice = input("Choose an option (1-2): ")
+
+    if choice == "1":
+        register_user()
+    elif choice == "2":
+        user_name = login_user()
+        if user_name:
+            while True:
+                print("\n--- MENU ---")
+                print("1. Show Report")
+                print("2. Add Student")
+                print("3. Update Name")
+                print("4. Delete Student")
+                print("5. Update Marks")
+                print("6. Show Full Report")
+                print("7. Show Graph")
+                print("8. View Top Performers")
+                print("9. Save & Exit")
+
+                menu_choice = input("Enter choice (1-9): ")
+
+                if menu_choice == "1":
+                    show_report()
+                elif menu_choice == "2":
+                    add_student()
+                elif menu_choice == "3":
+                    update_name()
+                elif menu_choice == "4":
+                    delete_student()
+                elif menu_choice == "5":
+                    update_marks()
+                elif menu_choice == "6":
+                    show_full_report()
+                elif menu_choice == "7":
+                    show_graph()
+                elif menu_choice == "8":
+                    show_top_performers()
+                elif menu_choice == "9":
+                    save_file()
+                    print("Exiting. Bye!")
+                    break
+                else:
+                    print("❌ Invalid choice.")
+        break
+    elif choice == "3":
+        print("Exiting")
+        break
+    else:
+        print("❌ Invalid choice. Try again.")
