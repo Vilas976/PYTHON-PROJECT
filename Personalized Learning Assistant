@@ -1,0 +1,178 @@
+import tkinter as tk
+from tkinter import messagebox
+import sqlite3
+import os
+import random
+import datetime
+import webbrowser
+
+
+def open_python_notes():
+    notes_url = "https://docs.google.com/presentation/d/1Rw9cIkVNKJnKMM35gtgpgxldz0LIqth0/edit?usp=sharing&ouid=113826274162264630451&rtpof=true&sd=true" 
+    webbrowser.open(notes_url)
+
+
+if not os.path.exists("database"):
+    os.makedirs("database")
+
+conn = sqlite3.connect("database/smartlearn.db")
+cursor = conn.cursor()
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        username TEXT PRIMARY KEY,
+        password TEXT,
+        language TEXT,
+        level TEXT
+    )
+''')
+conn.commit()
+
+
+LEARNING_PATHS = {
+    "Python": ["Variables", "Loops", "Functions", "Array", "OOPS", "File Handling", "Modules"],
+}
+
+def generate_learning_path(language):
+    topics = LEARNING_PATHS.get(language, [])
+    random.shuffle(topics)
+    return topics[:4]
+
+PYTHON_QUIZ = [
+    {"q": "Who is Founder of Python?", "a": "Guido van Rossum"},
+    {"q": "When Was Python Found?", "a": "21 Feb 1991"},
+    {"q": "What is the first code in Python?", "a": "Hello, World"},
+    {"q": "How many fundamental topics in Python?", "a": "data type, variables, operators, control flow, loop, function, array"},
+    {"q": "What does 'len()' do?", "a": "Returns the length of a list"},
+    {"q": "Which is the latest version of Python?", "a": "3.13.4, Released on June 3, 2025"},
+    {"q": "How does Python work?", "a": "Through interpretation, bytecode, memory mgmt, dynamic typing"},
+    {"q": "What is the output of type('hello')?", "a": "<class 'str'>"},
+    {"q": "What is the output of print(2**3)?", "a": "8"},
+    {"q": "What data type is [1, 2, 3]?", "a": "List"},
+    {"q": "What will list(range(5)) return?", "a": "[0, 1, 2, 3, 4]"},
+    {"q": "Which keyword is used for loops?", "a": "for or while"},
+    {"q": "How do you import a module?", "a": "import module_name"},
+    {"q": "What is used to handle exceptions?", "a": "try-except"},
+    {"q": "What is the correct file extension for Python files?", "a": ".py"},
+    {"q": "What is a tuple?", "a": "An immutable ordered collection"},
+    {"q": "What does 'break' do in a loop?", "a": "Exits the loop"},
+    {"q": "What is '__init__' in Python?", "a": "Constructor method in a class"},
+    {"q": "What does OOP stand for?", "a": "Object-Oriented Programming"},
+    {"q": "What is a lambda function?", "a": "An anonymous function"},
+    {"q": "Which operator is used for exponentiation?", "a": "**"},
+    {"q": "How do you get all keys from a dictionary?", "a": "dict.keys()"},
+    {"q": "Which built-in function returns the largest item?", "a": "max()"},
+    {"q": "What is the output of bool('')?", "a": "False"},
+    {"q": "What is a docstring?", "a": "String literal used for documentation"},
+    {"q": "How do you create a set?", "a": "Using {} or set()"},
+    {"q": "What does 'is' keyword check?", "a": "Identity (if two objects are same)"},
+    {"q": "What is the result of 10 // 3?", "a": "3"},
+    {"q": "What is slicing in Python?", "a": "Extracting a portion of a list or string"},
+    {"q": "How do you define a class?", "a": "Using the 'class' keyword"},
+    {"q": "What symbol is used to start a comment in Python?", "a": "#"},
+    {"q": "Which operator checks equality?", "a": "=="},
+    {"q": "What is the result of 3 != 3?", "a": "False"},
+    {"q": "What does list.count(x) return?", "a": "Number of times x appears in the list"},
+    {"q": "What is the use of 'with open()'?", "a": "Automatically handles file closing"},
+    {"q": "How do you check if a key exists in a dictionary?", "a": "key in dict"},
+    {"q": "What will len({}) return?", "a": "0"},
+    {"q": "How to concatenate two lists?", "a": "Using + operator"},
+    {"q": "What is recursion?", "a": "A function calling itself"},
+    {"q": "How do you remove all items from a list?", "a": "clear()"},
+    {"q": "What happens if you pop from an empty list?", "a": "IndexError"}
+]
+
+def get_quiz(language):
+    return PYTHON_QUIZ if language == "Python" else []
+
+def generate_schedule(available_hours):
+    now = datetime.datetime.now()
+    return {
+        (now + datetime.timedelta(hours=i)).strftime("%H:%M"): f"Programming Practice Hour {i+1}"
+        for i in range(available_hours)
+    }
+
+def login_user():
+    def submit():
+        user = entry_user.get()
+        pw = entry_pw.get()
+        cursor.execute("SELECT * FROM users WHERE username=? AND password=?", (user, pw))
+        result = cursor.fetchone()
+        if result:
+            messagebox.showinfo("Login Success", f"Welcome, {user}!\n\nLanguage: {result[2]}\nLevel: {result[3]}")
+            show_dashboard(user, result[2])
+        else:
+            messagebox.showerror("Error", "Invalid credentials")
+
+    win = tk.Toplevel()
+    win.title("Login")
+    tk.Label(win, text="Username").pack()
+    entry_user = tk.Entry(win)
+    entry_user.pack()
+    tk.Label(win, text="Password").pack()
+    entry_pw = tk.Entry(win, show='*')
+    entry_pw.pack()
+    tk.Button(win, text="Login", command=submit).pack()
+
+def register_user():
+    def submit():
+        user = entry_user.get()
+        pw = entry_pw.get()
+        language = entry_lang.get()
+        level = entry_level.get()
+        try:
+            cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?)", (user, pw, language, level))
+            conn.commit()
+            messagebox.showinfo("Success", "User registered successfully!")
+            win.destroy()
+        except sqlite3.IntegrityError:
+            messagebox.showerror("Error", "User already exists")
+
+    win = tk.Toplevel()
+    win.title("Register")
+    tk.Label(win, text="Username").pack()
+    entry_user = tk.Entry(win)
+    entry_user.pack()
+    tk.Label(win, text="Password").pack()
+    entry_pw = tk.Entry(win, show='*')
+    entry_pw.pack()
+    tk.Label(win, text="Preferred Language (Python)").pack()
+    entry_lang = tk.Entry(win)
+    entry_lang.pack()
+    tk.Label(win, text="Skill Level (Beginner/Intermediate)").pack()
+    entry_level = tk.Entry(win)
+    entry_level.pack()
+    tk.Button(win, text="Register", command=submit).pack()
+
+def show_dashboard(user, language):
+    dashboard = tk.Toplevel()
+    dashboard.title(f"{user}'s Learning Dashboard")
+
+    tk.Label(dashboard, text=f"Recommended Topics in {language}:", font=("Arial", 12, "bold")).pack(pady=10)
+    for topic in generate_learning_path(language):
+        tk.Label(dashboard, text=f"• {topic}").pack()
+
+    def start_quiz():
+        quiz_win = tk.Toplevel()
+        quiz_win.title("Quick Quiz")
+        quiz = get_quiz(language)
+        for q in quiz:
+            tk.Label(quiz_win, text=f"Q: {q['q']}").pack()
+            tk.Label(quiz_win, text=f"A: {q['a']}", fg='green').pack()
+
+    tk.Button(dashboard, text="Take a Quiz", command=start_quiz).pack(pady=10)
+    tk.Label(dashboard, text="Today's Practice Schedule:", font=("Arial", 12, "bold")).pack(pady=5)
+    for time, task in generate_schedule(3).items():
+        tk.Label(dashboard, text=f"{time} - {task}").pack()
+
+    tk.Button(dashboard, text="📘 Open Python Notes (PDF)", command=open_python_notes).pack(pady=10)
+
+def run_dashboard():
+    root = tk.Tk()
+    root.title("Personalized Learning - Assistant")
+    tk.Label(root, text="Welcome to Personalized Learning - Programmer", font=("Arial", 16)).pack(pady=35)
+    tk.Button(root, text="Login", width=20, command=login_user).pack(pady=10)
+    tk.Button(root, text="Sign Up", width=20, command=register_user).pack(pady=10)
+    root.mainloop()
+
+if __name__ == "__main__":
+    run_dashboard()
